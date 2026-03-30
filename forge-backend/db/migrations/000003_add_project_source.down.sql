@@ -1,0 +1,2 @@
+ALTER TABLE projects DROP COLUMN IF EXISTS source;
+ALTER TABLE projects DROP COLUMN IF EXISTS original_url;

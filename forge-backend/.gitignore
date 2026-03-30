@@ -1,0 +1,31 @@
+# Environment — never commit secrets
+.env
+.env.local
+
+# Go build artifacts
+bin/
+*.exe
+*.test
+*.out
+
+# Go test cache
+/tmp/
+
+# Database
+*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude memory
+.claude/
+node_modules
+
+# Frontend lives in the separate forge-frontend repo
+frontend/
