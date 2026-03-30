@@ -1,0 +1,232 @@
+/* Google Fonts — must be first */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design tokens ──────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-base:       #0A0A0F;
+  --bg-surface:    #111118;
+  --bg-raised:     #1A1A24;
+  --bg-overlay:    #22222F;
+
+  /* Borders */
+  --border-subtle:  #1E1E2E;
+  --border-default: #2A2A3A;
+  --border-strong:  #3A3A50;
+
+  /* Accent — Electric Indigo */
+  --accent:        #6366F1;
+  --accent-hover:  #818CF8;
+  --accent-muted:  rgba(99, 102, 241, 0.12);
+  --accent-glow:   rgba(99, 102, 241, 0.25);
+
+  /* Text */
+  --text-primary:   #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-disabled:  #475569;
+  --text-accent:    #818CF8;
+
+  /* Semantic */
+  --color-modified: #F59E0B;
+  --color-error:    #EF4444;
+  --color-success:  #10B981;
+  --color-warning:  #F59E0B;
+  --color-info:     #60A5FA;
+
+  /* Language colors */
+  --lang-go:        #2DD4BF;
+  --lang-go-bg:     rgba(45, 212, 191, 0.10);
+  --lang-ts:        #60A5FA;
+  --lang-ts-bg:     rgba(96, 165, 250, 0.10);
+  --lang-py:        #F59E0B;
+  --lang-py-bg:     rgba(245, 158, 11, 0.10);
+  --lang-sql:       #FB923C;
+  --lang-sql-bg:    rgba(251, 146, 60, 0.10);
+  --lang-yaml:      #94A3B8;
+  --lang-yaml-bg:   rgba(148, 163, 184, 0.10);
+  --lang-md:        #A78BFA;
+  --lang-md-bg:     rgba(167, 139, 250, 0.10);
+  --lang-docker:    #60A5FA;
+  --lang-docker-bg: rgba(96, 165, 250, 0.10);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* Shadows */
+  --shadow-sm:     0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:     0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,0.6);
+  --shadow-accent: 0 0 0 2px var(--accent), 0 0 16px var(--accent-glow);
+  --shadow-error:  0 0 0 2px var(--color-error), 0 0 12px rgba(239,68,68,0.2);
+
+  /* Legacy HSL tokens for existing Tailwind utility classes */
+  --background: 222 47% 6%;
+  --foreground: 213 31% 91%;
+  --card: 222 47% 8%;
+  --card-foreground: 213 31% 91%;
+  --border: 216 34% 15%;
+  --input: 216 34% 15%;
+  --primary: 210 100% 56%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 223 47% 12%;
+  --muted-foreground: 215 20% 55%;
+  --accent: 216 34% 15%;
+  --accent-foreground: 213 31% 91%;
+  --destructive: 0 63% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 210 100% 56%;
+  --radius: 0.5rem;
+}
+
+/* ─── Reset & base ───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  background-color: #0A0A0F;
+}
+
+body {
+  height: 100%;
+  background-color: #0A0A0F;
+  color: #F1F5F9;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  background-color: #0A0A0F;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.25);
+  color: #F1F5F9;
+}
+
+:focus-visible {
+  outline: 2px solid #6366F1;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #2A2A3A;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover { background: #3A3A50; }
+
+/* ─── Animations ─────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Shared form input ──────────────────────────────────────── */
+input::placeholder,
+textarea::placeholder {
+  color: #475569;
+}
+
+.field-input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+  caret-color: var(--accent);
+}
+.field-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-muted);
+}
+
+/* ─── React Flow overrides ───────────────────────────────────── */
+.react-flow__background {
+  background-color: #0A0A0F !important;
+}
+
+.react-flow__pane {
+  background-color: #0A0A0F !important;
+}
+
+.react-flow__edge-path {
+  stroke: #2A2A3A;
+  stroke-width: 1.5;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #6366F1;
+}
+
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: #3A3A50;
+  border: 1.5px solid #6366F1;
+}
+
+.react-flow__handle:hover {
+  background: #6366F1;
+}
+
+.react-flow__minimap {
+  background: #111118 !important;
+  border: 1px solid #2A2A3A !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__controls {
+  border: 1px solid #2A2A3A !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.react-flow__controls-button {
+  background: #111118 !important;
+  border-bottom-color: #1E1E2E !important;
+  color: #F1F5F9 !important;
+}
+
+.react-flow__controls-button svg,
+.react-flow__controls-button svg *,
+.react-flow__controls-button svg path,
+.react-flow__controls-button svg rect,
+.react-flow__controls-button svg line,
+.react-flow__controls-button svg polyline {
+  fill: #000000 !important;
+  stroke: #000000 !important;
+  opacity: 1 !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #1A1A24 !important;
+}
+
+/* ─── AST Inspector scrollbar ────────────────────────────────── */
+.inspector-scroll::-webkit-scrollbar { width: 4px; }
+.inspector-scroll::-webkit-scrollbar-track { background: transparent; }
+.inspector-scroll::-webkit-scrollbar-thumb {
+  background: #2A2A3A;
+  border-radius: 2px;
+}

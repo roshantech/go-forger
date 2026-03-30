@@ -1,0 +1,76 @@
+:root {
+  /* Backgrounds */
+  --bg-base:       #0A0A0F;
+  --bg-surface:    #111118;
+  --bg-raised:     #1A1A24;
+  --bg-overlay:    #22222F;
+
+  /* Borders */
+  --border-subtle:  #1E1E2E;
+  --border-default: #2A2A3A;
+  --border-strong:  #3A3A50;
+
+  /* Accent — Electric Indigo */
+  --accent:        #6366F1;
+  --accent-hover:  #818CF8;
+  --accent-muted:  rgba(99, 102, 241, 0.12);
+  --accent-glow:   rgba(99, 102, 241, 0.25);
+
+  /* Text */
+  --text-primary:   #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-disabled:  #475569;
+  --text-accent:    #818CF8;
+
+  /* Semantic */
+  --color-modified: #F59E0B;
+  --color-error:    #EF4444;
+  --color-success:  #10B981;
+  --color-warning:  #F59E0B;
+  --color-info:     #60A5FA;
+
+  /* Language colors */
+  --lang-go:        #2DD4BF;
+  --lang-go-bg:     rgba(45, 212, 191, 0.10);
+  --lang-ts:        #60A5FA;
+  --lang-ts-bg:     rgba(96, 165, 250, 0.10);
+  --lang-py:        #F59E0B;
+  --lang-py-bg:     rgba(245, 158, 11, 0.10);
+  --lang-sql:       #FB923C;
+  --lang-sql-bg:    rgba(251, 146, 60, 0.10);
+  --lang-yaml:      #94A3B8;
+  --lang-yaml-bg:   rgba(148, 163, 184, 0.10);
+  --lang-md:        #A78BFA;
+  --lang-md-bg:     rgba(167, 139, 250, 0.10);
+  --lang-docker:    #60A5FA;
+  --lang-docker-bg: rgba(96, 165, 250, 0.10);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* Font sizes */
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;
+  --text-md:   14px;
+  --text-lg:   16px;
+  --text-xl:   18px;
+  --text-2xl:  20px;
+  --text-3xl:  24px;
+
+  /* Shadows */
+  --shadow-sm:     0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:     0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,0.6);
+  --shadow-accent: 0 0 0 2px var(--accent), 0 0 16px var(--accent-glow);
+  --shadow-error:  0 0 0 2px var(--color-error), 0 0 12px rgba(239,68,68,0.2);
+
+  /* Z-index */
+  --z-base:     0;
+  --z-raised:   10;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-modal:    300;
+  --z-toast:    400;
+}
