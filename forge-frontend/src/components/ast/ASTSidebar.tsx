@@ -1,10 +1,14 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ChevronDown, ChevronRight, FileCode, Layers, Trash2,
-  Pencil, Plus, X, Copy, Check,
+  Pencil, Plus, X, Copy, Check, GitBranch, Loader2,
 } from 'lucide-react'
 import { useASTViewerStore, useActiveTab, type CustomNodeEntry } from '@/store/astViewerStore'
 import type { TreeNode, FunctionInfo, TypeInfo, InterfaceInfo, VarInfo, ImportInfo } from '@/lib/api'
+import { usageApi } from '@/lib/api'
+import { useFileTreeStore } from '@/store/fileTreeStore'
+import { useUsageStore } from '@/store/usageStore'
 import { CATEGORY_COLORS } from './ASTNode'
 
 type SidePane = 'node' | 'edit' | 'file'
@@ -805,6 +809,50 @@ function InspectSection({ title, count, color, children }: { title: string; coun
   )
 }
 
+// ─── View Usages button ───────────────────────────────────────────────────────
+
+function ViewUsagesButton({ symbol, symbolType }: { symbol: string; symbolType: string }) {
+  const navigate = useNavigate()
+  const { projectId } = useFileTreeStore()
+  const { setLoading, setData, setError } = useUsageStore()
+  const [busy, setBusy] = useState(false)
+
+  async function handleClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!projectId || busy) return
+    setBusy(true)
+    setLoading(symbol, symbolType)
+    try {
+      const res = await usageApi.getUsages(projectId, symbol, symbolType)
+      setData(symbol, symbolType, res.data)
+      navigate('/ast')
+    } catch {
+      setError('Failed to find usages')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={!projectId || busy}
+      title={projectId ? `Find all usages of ${symbol}` : 'Open a project first'}
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold shrink-0 transition-colors"
+      style={{
+        background: 'rgba(45,212,191,0.08)',
+        color: projectId ? 'rgba(45,212,191,0.9)' : 'var(--muted-foreground)',
+        opacity: !projectId || busy ? 0.5 : 1,
+        cursor: !projectId || busy ? 'not-allowed' : 'pointer',
+        border: 'none',
+      }}
+    >
+      {busy ? <Loader2 size={8} className="animate-spin" /> : <GitBranch size={8} />}
+      {busy ? 'Searching…' : 'Usages'}
+    </button>
+  )
+}
+
 function FnRow({ fn }: { fn: FunctionInfo }) {
   const [open, setOpen] = useState(false)
   return (
@@ -813,7 +861,10 @@ function FnRow({ fn }: { fn: FunctionInfo }) {
         {open ? <ChevronDown size={10} className="text-muted-foreground/30 shrink-0" /> : <ChevronRight size={10} className="text-muted-foreground/30 shrink-0" />}
         {fn.receiver && <span className="text-[10px] text-muted-foreground/40 font-mono shrink-0">({fn.receiver})</span>}
         <span className={`text-[11px] font-mono font-semibold truncate ${fn.isExported ? 'text-blue-300' : 'text-foreground/70'}`}>{fn.name}</span>
-        <span className="ml-auto text-[10px] text-muted-foreground/30 shrink-0">:{fn.lineStart}</span>
+        <span className="ml-auto flex items-center gap-1.5 shrink-0">
+          <ViewUsagesButton symbol={fn.name} symbolType="function" />
+          <span className="text-[10px] text-muted-foreground/30">:{fn.lineStart}</span>
+        </span>
       </button>
       {open && (
         <div className="px-3 pb-1.5 text-[10px] font-mono space-y-0.5 border-t border-border/20">
@@ -834,6 +885,9 @@ function TypeRow({ type: t }: { type: TypeInfo }) {
         {open ? <ChevronDown size={10} className="text-muted-foreground/30 shrink-0" /> : <ChevronRight size={10} className="text-muted-foreground/30 shrink-0" />}
         <span className={`text-[11px] font-mono font-semibold truncate ${t.isExported ? 'text-teal-300' : 'text-foreground/70'}`}>{t.name}</span>
         <span className="text-[10px] text-muted-foreground/40 ml-1">{t.kind}</span>
+        <span className="ml-auto shrink-0">
+          <ViewUsagesButton symbol={t.name} symbolType="type" />
+        </span>
       </button>
       {open && t.fields && t.fields.length > 0 && (
         <div className="px-2 pb-1.5 border-t border-border/20">

@@ -6,18 +6,24 @@ import { useASTViewerStore, useActiveTab } from '@/store/astViewerStore'
 import ASTFlowCanvas from '@/components/ast/ASTFlowCanvas'
 import ASTSidebar from '@/components/ast/ASTSidebar'
 import NodePalette from '@/components/ast/NodePalette'
+import UsageFlowCanvas from '@/components/ast/UsageFlowCanvas'
 import { CATEGORY_COLORS } from '@/components/ast/ASTNode'
 import {
   Upload, Code2, GitBranch, X, RefreshCw,
   ChevronDown, ChevronUp, Layers, ChevronRight,
-  ArrowLeft, Home,
+  ArrowLeft, Home, Sparkles, Hash,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useUIStore } from '@/store/uiStore'
+import { useUsageStore } from '@/store/usageStore'
 
 const SIDEBAR_MIN = 200
 const SIDEBAR_MAX = 640
 const SIDEBAR_DEFAULT = 300
-const PALETTE_WIDTH = 220
+const PALETTE_MIN = 160
+const PALETTE_MAX = 360
+const PALETTE_DEFAULT = 220
+const PALETTE_COLLAPSED_W = 28
 
 export default function ASTPage() {
   const activeTab = useActiveTab()
@@ -27,6 +33,9 @@ export default function ASTPage() {
     setViewMode, setViewDensity, setMaxDepth,
     focusPop, focusTo,
   } = useASTViewerStore()
+
+  const { aiPanelOpen, toggleAiPanel } = useUIStore()
+  const { data: usageData, symbol: usageSymbol, loading: usageLoading, clear: clearUsage } = useUsageStore()
 
   const fileRef = useRef<HTMLInputElement>(null)
   const viewMode = activeTab?.viewMode ?? 'flow'
@@ -39,12 +48,25 @@ export default function ASTPage() {
   const resizeX = useRef(0)
   const resizeW = useRef(0)
 
+  // ── Resizable + collapsible left palette ──────────────────────────────────
+  const [paletteW, setPaletteW] = useState(PALETTE_DEFAULT)
+  const [paletteOpen, setPaletteOpen] = useState(true)
+  const paletteResizing = useRef(false)
+  const paletteStartX = useRef(0)
+  const paletteStartW = useRef(PALETTE_DEFAULT)
+
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      if (!resizing.current) return
-      setSidebarW(Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, resizeW.current + resizeX.current - e.clientX)))
+      if (resizing.current)
+        setSidebarW(Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, resizeW.current + resizeX.current - e.clientX)))
+      if (paletteResizing.current)
+        setPaletteW(Math.max(PALETTE_MIN, Math.min(PALETTE_MAX, paletteStartW.current + e.clientX - paletteStartX.current)))
     }
-    const onUp = () => { resizing.current = false; document.body.style.cursor = '' }
+    const onUp = () => {
+      resizing.current = false
+      paletteResizing.current = false
+      document.body.style.cursor = ''
+    }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
@@ -152,6 +174,18 @@ export default function ASTPage() {
           >
             + Open
           </button>
+          {/* Usage mode banner */}
+          {usageData && (
+            <div className="flex items-center gap-2 px-3 py-1.5 shrink-0 border-l border-border bg-[rgba(45,212,191,0.06)]">
+              <Hash size={10} style={{ color: 'rgba(45,212,191,0.8)' }} />
+              <span className="text-[10px] font-mono" style={{ color: 'rgba(45,212,191,0.8)' }}>
+                usages: <strong>{usageSymbol}</strong>
+              </span>
+              <button onClick={clearUsage} className="ml-1 text-muted-foreground/50 hover:text-foreground">
+                <X size={10} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right-side controls (only when a file is open) */}
@@ -221,6 +255,22 @@ export default function ASTPage() {
                 <Code2 size={10} /> Code
               </button>
             </div>
+
+            <div className="w-px h-3 bg-border" />
+
+            {/* AI Chat toggle */}
+            <button
+              onClick={toggleAiPanel}
+              title={aiPanelOpen ? 'Close AI Chat' : 'Open AI Chat'}
+              className={`flex items-center gap-1.5 px-2 py-1 text-[10px] border transition-colors ${
+                aiPanelOpen
+                  ? 'border-primary/60 text-primary bg-primary/10'
+                  : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+              }`}
+            >
+              <Sparkles size={10} />
+              AI Chat
+            </button>
           </div>
         )}
       </div>
@@ -306,14 +356,40 @@ export default function ASTPage() {
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left palette (flow mode only) */}
           {viewMode === 'flow' && (
-            <aside className="shrink-0 overflow-hidden" style={{ width: PALETTE_WIDTH }}>
-              <NodePalette />
-            </aside>
+            <>
+              <aside
+                className="shrink-0 overflow-hidden"
+                style={{ width: paletteOpen ? paletteW : PALETTE_COLLAPSED_W, transition: paletteOpen ? 'none' : 'width 150ms ease' }}
+              >
+                <NodePalette collapsed={!paletteOpen} onToggle={() => setPaletteOpen(o => !o)} />
+              </aside>
+              {/* Palette resize handle — only when expanded */}
+              {paletteOpen && (
+                <div
+                  onMouseDown={e => {
+                    paletteResizing.current = true
+                    paletteStartX.current = e.clientX
+                    paletteStartW.current = paletteW
+                    document.body.style.cursor = 'col-resize'
+                    e.preventDefault()
+                  }}
+                  className="w-1 shrink-0 cursor-col-resize bg-border hover:bg-primary/50 transition-colors active:bg-primary"
+                />
+              )}
+            </>
           )}
 
           {/* Canvas / Code editor */}
           <div className="flex-1 min-w-0 relative overflow-hidden">
-            {viewMode === 'flow' ? (
+            {usageData ? (
+              <ReactFlowProvider>
+                <UsageFlowCanvas />
+              </ReactFlowProvider>
+            ) : usageLoading ? (
+              <div className="flex-1 h-full flex items-center justify-center">
+                <RefreshCw size={16} className="animate-spin text-muted-foreground/40" />
+              </div>
+            ) : viewMode === 'flow' ? (
               <ReactFlowProvider>
                 <ASTFlowCanvas />
               </ReactFlowProvider>
@@ -333,6 +409,7 @@ export default function ASTPage() {
                 />
               </div>
             )}
+
           </div>
 
           {/* Resize handle */}

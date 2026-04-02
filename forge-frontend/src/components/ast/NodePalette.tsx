@@ -1,6 +1,6 @@
 import { useState, type DragEvent } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { ChevronDown, ChevronRight, Sparkles, Code2, Loader2, GripVertical, BookOpen } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronLeft, Sparkles, Code2, Loader2, GripVertical, BookOpen } from 'lucide-react'
 import { CATEGORY_COLORS } from './ASTNode'
 import { astApi, type TreeNode } from '@/lib/api'
 import { useASTViewerStore } from '@/store/astViewerStore'
@@ -277,7 +277,12 @@ func TestAdd(t *testing.T) {
 
 // ─── NodePalette component ────────────────────────────────────────────────────
 
-export default function NodePalette() {
+interface NodePaletteProps {
+  collapsed: boolean
+  onToggle: () => void
+}
+
+export default function NodePalette({ collapsed, onToggle }: NodePaletteProps) {
   const { addCustomNode } = useASTViewerStore()
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['Structure', 'Statements']))
   const [templatesOpen, setTemplatesOpen] = useState(true)
@@ -324,14 +329,43 @@ export default function NodePalette() {
     onError: () => toast.error('Parse failed — check your Go snippet'),
   })
 
+  if (collapsed) {
+    return (
+      <div
+        className="h-full flex flex-col items-center bg-[hsl(222,47%,7%)] border-r border-border overflow-hidden cursor-pointer select-none"
+        onClick={onToggle}
+        title="Expand Node Palette"
+      >
+        <div className="w-full flex items-center justify-center py-2.5 border-b border-border shrink-0">
+          <ChevronRight size={12} className="text-muted-foreground/50" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <span
+            className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
+            Node Palette
+          </span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="h-full flex flex-col bg-[hsl(222,47%,7%)] border-r border-border overflow-hidden">
-      {/* Header */}
-      <div className="px-3 py-2.5 border-b border-border shrink-0">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">
-          Node Palette
-        </p>
-        <p className="text-[10px] text-muted-foreground/40 mt-0.5">Drag onto canvas</p>
+      {/* Header — click to collapse */}
+      <div
+        className="px-3 py-2.5 border-b border-border shrink-0 flex items-center gap-2 cursor-pointer hover:bg-accent/20 transition-colors select-none"
+        onClick={onToggle}
+        title="Collapse Node Palette"
+      >
+        <div className="flex-1">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">
+            Node Palette
+          </p>
+          <p className="text-[10px] text-muted-foreground/40 mt-0.5">Drag onto canvas</p>
+        </div>
+        <ChevronLeft size={12} className="text-muted-foreground/40 shrink-0" />
       </div>
 
       {/* Scrollable content */}

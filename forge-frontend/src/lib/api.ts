@@ -199,6 +199,36 @@ export const projectApi = {
     api.get<ProjectFile>(`/projects/${projectId}/files/${path}`),
 }
 
+// ─── Usages ──────────────────────────────────────────────────────────────────
+
+export interface UsageItem {
+  file: string
+  line: number
+}
+
+export interface UsageGraphNode {
+  id: string
+  type: 'symbol' | 'file'
+  label: string
+}
+
+export interface UsageGraphEdge {
+  id: string
+  source: string
+  target: string
+}
+
+export interface UsageResponse {
+  nodes: UsageGraphNode[]
+  edges: UsageGraphEdge[]
+  usages: UsageItem[]
+}
+
+export const usageApi = {
+  getUsages: (projectId: string, symbol: string, type: string) =>
+    api.post<UsageResponse>(`/projects/${projectId}/usages`, { symbol, type }),
+}
+
 // ─── AST Tree ────────────────────────────────────────────────────────────────
 
 export interface TreeNode {

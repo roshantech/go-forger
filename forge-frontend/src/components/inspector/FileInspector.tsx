@@ -1,7 +1,11 @@
 import { useState, useMemo } from 'react'
-import { ChevronDown, ChevronRight, Search } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ChevronDown, ChevronRight, Search, GitBranch, Loader2 } from 'lucide-react'
 import type { FileInspection, FunctionInfo, TypeInfo, InterfaceInfo, VarInfo, ImportInfo } from '@/lib/api'
+import { usageApi } from '@/lib/api'
 import { FileTypeIcon } from '@/components/ui/FileTypeIcon'
+import { useFileTreeStore } from '@/store/fileTreeStore'
+import { useUsageStore } from '@/store/usageStore'
 
 interface Props {
   inspection: FileInspection
@@ -60,6 +64,56 @@ function Section({
   )
 }
 
+// ─── View Usages button ───────────────────────────────────────
+function ViewUsagesButton({ symbol, symbolType }: { symbol: string; symbolType: string }) {
+  const navigate     = useNavigate()
+  const { projectId } = useFileTreeStore()
+  const { setLoading, setData, setError } = useUsageStore()
+  const [busy, setBusy] = useState(false)
+
+  async function handleClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!projectId || busy) return
+    setBusy(true)
+    setLoading(symbol, symbolType)
+    try {
+      const res = await usageApi.getUsages(projectId, symbol, symbolType)
+      setData(symbol, symbolType, res.data)
+      navigate('/ast')
+    } catch {
+      setError('Failed to find usages')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={!projectId || busy}
+      title={projectId ? `Find usages of ${symbol}` : 'Open a project first'}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 4,
+        padding: '2px 7px', borderRadius: 4, border: 'none', cursor: 'pointer',
+        fontSize: 9, fontWeight: 600, letterSpacing: '0.04em',
+        background: 'rgba(45,212,191,0.08)',
+        color: projectId ? 'var(--lang-go)' : 'var(--text-disabled)',
+        opacity: !projectId || busy ? 0.5 : 1,
+        flexShrink: 0,
+        transition: 'background 100ms, opacity 100ms',
+      }}
+      onMouseEnter={e => { if (projectId && !busy) e.currentTarget.style.background = 'rgba(45,212,191,0.18)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(45,212,191,0.08)' }}
+    >
+      {busy
+        ? <Loader2 size={8} style={{ animation: 'spin 1s linear infinite' }} />
+        : <GitBranch size={8} />
+      }
+      {busy ? 'Searching…' : 'Usages'}
+    </button>
+  )
+}
+
 // ─── Function row ─────────────────────────────────────────────
 function FunctionRow({ fn, onGoto }: { fn: FunctionInfo; onGoto?: (line: number) => void }) {
   const [exp, setExp] = useState(false)
@@ -110,7 +164,7 @@ function FunctionRow({ fn, onGoto }: { fn: FunctionInfo; onGoto?: (line: number)
         <button
           onClick={e => { e.stopPropagation(); onGoto?.(fn.lineStart) }}
           style={{
-            flexShrink: 0, marginRight: 8,
+            flexShrink: 0,
             fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 600,
             color: 'var(--accent)', background: 'var(--accent-muted)',
             padding: '2px 5px', borderRadius: 4, border: 'none', cursor: 'pointer',
@@ -122,6 +176,9 @@ function FunctionRow({ fn, onGoto }: { fn: FunctionInfo; onGoto?: (line: number)
         >
           L{fn.lineStart}
         </button>
+        <div style={{ marginRight: 6 }} onClick={e => e.stopPropagation()}>
+          <ViewUsagesButton symbol={fn.name} symbolType="function" />
+        </div>
       </button>
 
       {exp && (
@@ -178,9 +235,12 @@ function TypeRow({ type: t }: { type: TypeInfo }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', flex: 1, minWidth: 0 }}>
           {exp ? <ChevronDown size={10} style={{ color: 'var(--text-disabled)' }} /> : <ChevronRight size={10} style={{ color: 'var(--text-disabled)' }} />}
           <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 500, color: t.isExported ? 'var(--text-primary)' : 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
-          <span style={{ fontSize: 9, color: 'var(--text-disabled)', marginRight: 4 }}>{t.kind}</span>
+          <span style={{ fontSize: 9, color: 'var(--text-disabled)' }}>{t.kind}</span>
         </div>
-        {t.fields && <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-disabled)', marginRight: 8 }}>{t.fields.length}f</span>}
+        {t.fields && <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-disabled)' }}>{t.fields.length}f</span>}
+        <div style={{ marginRight: 6, marginLeft: 4 }} onClick={e => e.stopPropagation()}>
+          <ViewUsagesButton symbol={t.name} symbolType="type" />
+        </div>
       </button>
       {exp && t.fields && t.fields.length > 0 && (
         <div style={{ padding: '4px 10px 6px 12px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-base)' }}>

@@ -49,12 +49,14 @@ func main() {
 	astHandler     := handlers.NewASTHandler(log)
 	projectHandler := handlers.NewProjectHandler(projectRepo, log)
 	uploadHandler  := handlers.NewUploadHandler(projectRepo, log)
+	usageHandler   := handlers.NewUsageHandler(projectRepo, log)
 
 	app := router.Setup(&router.Deps{
 		AuthHandler:    authHandler,
 		ASTHandler:     astHandler,
 		ProjectHandler: projectHandler,
 		UploadHandler:  uploadHandler,
+		UsageHandler:   usageHandler,
 		JWTSecret:      cfg.JWTSecret,
 		Logger:         log,
 	})

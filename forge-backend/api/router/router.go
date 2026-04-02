@@ -13,6 +13,7 @@ type Deps struct {
 	ASTHandler     *handlers.ASTHandler
 	ProjectHandler *handlers.ProjectHandler
 	UploadHandler  *handlers.UploadHandler
+	UsageHandler   *handlers.UsageHandler
 	JWTSecret      string
 	Logger         *zap.Logger
 }
@@ -60,6 +61,7 @@ func Setup(deps *Deps) *fiber.App {
 	projects.Delete("/:id", deps.ProjectHandler.Delete)
 	projects.Post("/:id/files", deps.ProjectHandler.UploadFiles)
 	projects.Get("/:id/files/*", deps.ProjectHandler.GetFile)
+	projects.Post("/:id/usages", deps.UsageHandler.FindUsages)
 
 	return app
 }

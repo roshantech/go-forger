@@ -219,8 +219,19 @@ export default function ASTFlowCanvas() {
           const cat = (n.data as ASTFlowNodeData)?.node?.category ?? 'other'
           return CATEGORY_COLORS[cat]?.border ?? '#6b7280'
         }}
-        maskColor="rgba(10,15,28,0.75)"
-        style={{ background: 'hsl(222,47%,8%)', border: '1px solid hsl(216,34%,15%)' }}
+        nodeStrokeColor={n => {
+          const cat = (n.data as ASTFlowNodeData)?.node?.category ?? 'other'
+          return CATEGORY_COLORS[cat]?.border ?? '#6b7280'
+        }}
+        nodeStrokeWidth={3}
+        pannable
+        zoomable
+        maskColor="rgba(10,15,28,0.6)"
+        style={{
+          background: 'hsl(222,47%,6%)',
+          border: '1px solid hsl(216,34%,18%)',
+          borderRadius: 6,
+        }}
       />
     </ReactFlow>
   )

@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ReactFlow,
@@ -51,7 +51,7 @@ function applyLayout(nodes: Node[], edges: Edge[]): Node[] {
     const pos  = g.node(n.id)
     const item = n.data as { itemType: FTreeItem['type'] }
     const w    = nodeWidth(item.itemType)
-    return { ...n, position: { x: pos.x - w / 2, y: pos.y - NODE_H / 2 } }
+    return { ...n, position: { x: pos.x - w / 2, y: pos.y - NODE_H / 2 }, width: w, height: NODE_H }
   })
 }
 
@@ -60,6 +60,7 @@ function buildFlow(
   visibleIds: string[],
   expandedIds: Set<string>,
   selectedFileId: string | null,
+  loadingFileId: string | null,
   onToggle: (id: string) => void,
   onSelect: (id: string) => void,
   onOpenAST: (id: string) => void,
@@ -97,6 +98,7 @@ function buildFlow(
         itemType: 'file', name: item.name, language: lang,
         isSelected: selectedFileId === id,
         isGoFile: lang === 'go',
+        isLoading: loadingFileId === id,
         onSelect:  () => onSelect(id),
         onOpenAST: () => onOpenAST(id),
       },
@@ -126,7 +128,8 @@ function buildFlow(
 export default function TreeCanvas() {
   const navigate = useNavigate()
   const { items, expandedIds, selectedFileId, toggleFolder, selectFile } = useFileTreeStore()
-  const { setData, clear } = useASTViewerStore()
+  const { openFile } = useASTViewerStore()
+  const [loadingFileId, setLoadingFileId] = useState<string | null>(null)
 
   const visibleIds = useMemo(
     () => getVisibleIds(items, expandedIds),
@@ -134,36 +137,39 @@ export default function TreeCanvas() {
     [items, Array.from(expandedIds).join(',')]
   )
 
-  // When a .go file is clicked: load AST then navigate to /ast
+  // When a .go file is clicked: parse AST then navigate to /ast
   const handleOpenAST = useCallback(async (id: string) => {
     const item = items[id]
     if (!item || item.type !== 'file') return
+    if (loadingFileId) return // prevent double-click during load
 
-    // If we have content in the store, use it directly
-    if (item.content) {
-      try {
-        const [treeRes, inspectRes] = await Promise.all([
-          astApi.treeRaw(item.name, item.content),
-          astApi.inspectRaw(item.name, item.content),
-        ])
-        setData(treeRes.data, inspectRes.data, item.content, item.name)
-        navigate('/ast')
-      } catch {
-        toast.error('Failed to parse ' + item.name)
-      }
+    if (item.content == null) {
+      toast('No content available — re-import the project', { icon: 'ℹ️' })
       return
     }
 
-    // Otherwise just navigate and let ASTPage handle upload
-    clear()
-    navigate('/ast')
-    toast('Upload the file on the AST page to visualize it', { icon: 'ℹ️' })
-  }, [items, setData, clear, navigate])
+    console.log('[TreeCanvas] opening AST for:', item.name, '| content length:', item.content.length)
+    setLoadingFileId(id)
+    try {
+      const [treeRes, inspectRes] = await Promise.all([
+        astApi.treeRaw(item.name, item.content),
+        astApi.inspectRaw(item.name, item.content),
+      ])
+      openFile(treeRes.data, inspectRes.data, item.content, item.name)
+      navigate('/ast')
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      console.error('[TreeCanvas] AST parse failed:', err)
+      toast.error(msg ?? 'Failed to parse ' + item.name)
+    } finally {
+      setLoadingFileId(null)
+    }
+  }, [items, loadingFileId, openFile, navigate])
 
   const { nodes, edges } = useMemo(
-    () => buildFlow(items, visibleIds, expandedIds, selectedFileId, toggleFolder, selectFile, handleOpenAST),
+    () => buildFlow(items, visibleIds, expandedIds, selectedFileId, loadingFileId, toggleFolder, selectFile, handleOpenAST),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [visibleIds, selectedFileId, Array.from(expandedIds).join(','), handleOpenAST]
+    [visibleIds, selectedFileId, loadingFileId, Array.from(expandedIds).join(','), handleOpenAST]
   )
 
   const handlePaneClick = useCallback(() => selectFile(null), [selectFile])
@@ -189,12 +195,21 @@ export default function TreeCanvas() {
         <MiniMap
           nodeColor={(n) => {
             const t = (n.data as { itemType?: string }).itemType
-            if (t === 'root')   return 'var(--accent)'
-            if (t === 'folder') return 'var(--border-strong)'
-            return 'var(--border-default)'
+            if (t === 'root')   return 'hsl(216,80%,50%)'
+            if (t === 'folder') return 'hsl(216,34%,30%)'
+            return 'hsl(216,34%,22%)'
           }}
+          nodeStrokeColor={(n) => {
+            const t = (n.data as { itemType?: string }).itemType
+            if (t === 'root')   return 'hsl(216,80%,70%)'
+            if (t === 'folder') return 'hsl(216,34%,45%)'
+            return 'hsl(216,34%,35%)'
+          }}
+          nodeStrokeWidth={3}
+          pannable
+          zoomable
           maskColor="rgba(10,10,15,0.75)"
-          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 8 }}
+          style={{ background: 'hsl(222,47%,6%)', border: '1px solid hsl(216,34%,18%)', borderRadius: 8 }}
         />
       </ReactFlow>
     </div>

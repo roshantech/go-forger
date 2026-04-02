@@ -71,7 +71,7 @@ export function treeToGraph(
       position: { x: 0, y: 0 },
       data: {
         node: n,
-        isExpanded: isExpanded || isRoot,
+        isExpanded: showChildren,
         hasChildren: children.length > 0,
         childCount: children.length,
         isRoot,

@@ -86,7 +86,7 @@ function makeTab(
     hiddenNodeIds: new Set(),
     focusStack: [],
     viewMode,
-    maxDepth: 2,
+    maxDepth: 1,
     viewDensity: 'summary',
   }
 }

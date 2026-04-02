@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { LayoutDashboard, GitBranch, Plus, X, Loader2 } from 'lucide-react'
+import { LayoutDashboard, GitBranch, Plus, X, Loader2, Trash2 } from 'lucide-react'
 import { projectApi, type Project } from '@/lib/api'
 import { useFileTreeStore } from '@/store/fileTreeStore'
 import { UploadModal } from '@/components/upload/UploadModal'
@@ -148,6 +148,11 @@ export function Sidebar() {
   const [uploadModal, setUploadModal] = useState(false)
   const { setProject, projectId } = useFileTreeStore()
 
+  const [hoveredId, setHoveredId]   = useState<string | null>(null)
+  const [confirmId, setConfirmId]   = useState<string | null>(null)
+  const queryClient                  = useQueryClient()
+  const { clear: clearTree }         = useFileTreeStore()
+
   const { data, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => projectApi.list().then(r => r.data.projects),
@@ -155,6 +160,17 @@ export function Sidebar() {
   })
 
   const projects: Project[] = data ?? []
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => projectApi.delete(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      if (id === projectId) { clearTree(); navigate('/project') }
+      toast.success('Project deleted')
+      setConfirmId(null)
+    },
+    onError: () => toast.error('Failed to delete project'),
+  })
 
   async function handleSelectProject(p: Project) {
     try {
@@ -260,29 +276,87 @@ export function Sidebar() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1, overflowY: 'auto' }} className="inspector-scroll">
               {projects.map(p => {
-                const active = p.id === projectId
+                const active  = p.id === projectId
+                const hovered = hoveredId === p.id
+                const confirm = confirmId === p.id
+                const deleting = deleteMut.isPending && deleteMut.variables === p.id
                 return (
                   <div
                     key={p.id}
                     data-testid={`project-item-${p.id}`}
-                    onClick={() => handleSelectProject(p)}
+                    onClick={() => { if (!confirm) handleSelectProject(p) }}
+                    onMouseEnter={() => setHoveredId(p.id)}
+                    onMouseLeave={() => { setHoveredId(null); setConfirmId(null) }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 7,
-                      height: 28, padding: '0 8px', borderRadius: 5,
-                      cursor: 'pointer', transition: 'background 100ms, color 100ms',
+                      height: 28, padding: '0 4px 0 8px', borderRadius: 5,
+                      cursor: confirm ? 'default' : 'pointer',
+                      transition: 'background 100ms, color 100ms',
                       fontSize: 11, fontWeight: active ? 500 : 400,
-                      background: active ? 'rgba(99,102,241,0.12)' : 'transparent',
-                      color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      background: active ? 'rgba(99,102,241,0.12)' : hovered ? 'var(--bg-raised)' : 'transparent',
+                      color: active ? 'var(--text-primary)' : hovered ? 'var(--text-primary)' : 'var(--text-secondary)',
                       borderLeft: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
                     }}
-                    onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--bg-raised)'; e.currentTarget.style.color = 'var(--text-primary)' } }}
-                    onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' } }}
                   >
                     <div style={{ width: 5, height: 5, borderRadius: 9999, flexShrink: 0, background: active ? 'var(--accent)' : 'var(--border-strong)' }} />
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                    <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 600, textTransform: 'uppercase', flexShrink: 0, color: LANG_COLOR[p.language] ?? 'var(--text-disabled)' }}>
-                      {p.language.slice(0, 2)}
-                    </span>
+
+                    {/* Language tag — hidden when confirm mode */}
+                    {!confirm && (
+                      <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 600, textTransform: 'uppercase', flexShrink: 0, color: LANG_COLOR[p.language] ?? 'var(--text-disabled)' }}>
+                        {p.language.slice(0, 2)}
+                      </span>
+                    )}
+
+                    {/* Delete button — appears on hover */}
+                    {confirm ? (
+                      /* Confirm row */
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); deleteMut.mutate(p.id) }}
+                          disabled={deleting}
+                          title="Confirm delete"
+                          style={{
+                            height: 18, padding: '0 6px', borderRadius: 3,
+                            fontSize: 9, fontWeight: 600, border: 'none', cursor: 'pointer',
+                            background: 'var(--error, #ef4444)', color: '#fff',
+                            opacity: deleting ? 0.6 : 1,
+                            display: 'flex', alignItems: 'center', gap: 3,
+                          }}
+                        >
+                          {deleting
+                            ? <Loader2 size={9} style={{ animation: 'spin 1s linear infinite' }} />
+                            : null}
+                          Delete
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); setConfirmId(null) }}
+                          title="Cancel"
+                          style={{
+                            height: 18, width: 18, borderRadius: 3, border: 'none', cursor: 'pointer',
+                            background: 'var(--bg-raised)', color: 'var(--text-disabled)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          <X size={9} />
+                        </button>
+                      </div>
+                    ) : hovered ? (
+                      <button
+                        onClick={e => { e.stopPropagation(); setConfirmId(p.id) }}
+                        title="Delete project"
+                        style={{
+                          width: 18, height: 18, borderRadius: 3, border: 'none', cursor: 'pointer',
+                          background: 'transparent', color: 'var(--text-disabled)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0, transition: 'background 100ms, color 100ms',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#ef4444' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-disabled)' }}
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    ) : null}
                   </div>
                 )
               })}

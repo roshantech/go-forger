@@ -214,13 +214,23 @@ textarea::placeholder {
 .react-flow__controls-button svg rect,
 .react-flow__controls-button svg line,
 .react-flow__controls-button svg polyline {
-  fill: #000000 !important;
-  stroke: #000000 !important;
+  fill: #94a3b8 !important;
+  stroke: #94a3b8 !important;
   opacity: 1 !important;
 }
 
 .react-flow__controls-button:hover {
   background: #1A1A24 !important;
+}
+
+.react-flow__controls-button:hover svg,
+.react-flow__controls-button:hover svg *,
+.react-flow__controls-button:hover svg path,
+.react-flow__controls-button:hover svg rect,
+.react-flow__controls-button:hover svg line,
+.react-flow__controls-button:hover svg polyline {
+  fill: #e2e8f0 !important;
+  stroke: #e2e8f0 !important;
 }
 
 /* ─── AST Inspector scrollbar ────────────────────────────────── */
